@@ -2,10 +2,7 @@ package com.me4502.wutlang;
 
 import com.sun.net.httpserver.HttpServer;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -40,14 +37,32 @@ import java.util.Stack;
  *
  *  Network Functions
  *
- *  'c' - Set console as output.
  *  '$' - Open network connections on localhost at port specified as characters until 0
- *  '|' - Read from network stream at context specified.
+ *          After the 0, the length should be specified as a raw number.
+ *          Cursor will be on length afterwards.
+ *  '@' - Set network stream as input.
+ *  '!' - Set network stream as output
+ *  '%' - Close network stream.
+ *  '~' - End server.
+ *
+ *  File Functions
+ *
+ *  '&' - Open file connections. Filename is characters until 0.
+ *  'o' - Set file as output.
+ *  'i' - Set file as input. Appends.
+ *  'p' - Clears file.
+ *  'e' - Closes file streams.
+ *
+ *  Standard IO Functions
+ *
+ *  'c' - Set console as output.
+ *  'r' - Set console as input.
  *
  *  Miscellaneous
  *
  *  '#' - Comment character. This line is a comment.
  *          Supports inline comments.
+ *  ':' - Dump heap.
  */
 public class Wutlang {
 
@@ -58,10 +73,17 @@ public class Wutlang {
 
     private static Stack<Character> stack = new Stack<>();
 
-    private static PrintStream fileOutput;
-    private static PrintStream netOutput;
+    private static File file;
 
-    private static PrintStream output;
+    private static OutputStream fileOutput;
+    private static OutputStream netOutput;
+
+    private static InputStream fileInput;
+    private static InputStream netInput;
+
+    private static boolean networkStreamOpen = false;
+
+    private static OutputStream output;
     private static InputStream input;
 
     private static String fileName;
@@ -112,7 +134,12 @@ public class Wutlang {
                 }
                 break;
             case '.':
-                output.print(heap[cursor]);
+                try {
+                    output.write(heap[cursor]);
+                    System.out.println("Writing " + heap[cursor]);
+                } catch (IOException e) {
+                    throw new ParsingException("Failed to write to output: " + e.getMessage());
+                }
                 break;
             case ',':
                 try {
@@ -130,6 +157,8 @@ public class Wutlang {
             case 'c':
                 output = System.out;
                 break;
+            case 'r':
+                input = System.in;
             case '^':
                 stack.push(heap[cursor]);
                 break;
@@ -163,11 +192,116 @@ public class Wutlang {
                     cursor ++;
                     port = port + read;
                 }
+                cursor ++;
                 try {
                     server = HttpServer.create(new InetSocketAddress("localhost", Integer.parseInt(port)), 0);
+                    System.out.println(server.getAddress().toString());
+                    server.createContext("/", httpExchange -> {
+                        netInput = new SequenceInputStream(new ByteArrayInputStream(httpExchange.getLocalAddress().getAddress().getAddress()), httpExchange.getRequestBody());
+                        netOutput = httpExchange.getResponseBody();
+                        httpExchange.sendResponseHeaders(200, (int)heap[cursor]);
+                        networkStreamOpen = true;
+                    });
+                    server.setExecutor(null);
+                    server.start();
                 } catch (IOException e) {
                     throw new ParsingException("Failed to create webserver. " + e.getMessage());
                 }
+                break;
+            case '@':
+                if (server == null) {
+                    throw new ParsingException("Webserver must be created before setting stream.");
+                }
+                if (!networkStreamOpen) {
+                    columnNum--;
+                    break;
+                }
+                input = netInput;
+                break;
+            case '!':
+                if (server == null) {
+                    throw new ParsingException("Webserver must be created before setting stream.");
+                }
+                if (!networkStreamOpen) {
+                    columnNum--;
+                    break;
+                }
+                output = netOutput;
+                break;
+            case '%':
+                networkStreamOpen = false;
+                try {
+                    netOutput.close();
+                    netInput.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case '~':
+                server.stop(2);
+                break;
+            case '&':
+                String filename = "";
+                while ((read = heap[cursor]) != 0) {
+                    cursor ++;
+                    filename = filename + read;
+                }
+                cursor ++;
+
+                file = new File(filename);
+                try {
+                    fileOutput = new FileOutputStream(file, true);
+                    fileInput = new FileInputStream(file);
+                } catch (FileNotFoundException e) {
+                    throw new ParsingException("Failed to access file. " + e.getMessage());
+                }
+                break;
+            case 'o':
+                if (file == null) {
+                    throw new ParsingException("File must be loaded before setting stream.");
+                }
+                output = fileOutput;
+                break;
+            case 'i':
+                if (file == null) {
+                    throw new ParsingException("File must be loaded before setting stream.");
+                }
+                input = fileInput;
+                break;
+            case 'p':
+                if (file == null) {
+                    throw new ParsingException("File must be loaded before clearing.");
+                }
+
+                try {
+                    fileOutput.close();
+                    fileInput.close();
+
+                    PrintWriter out = new PrintWriter(file);
+                    out.write("");
+                    out.close();
+
+                    fileOutput = new FileOutputStream(file, true);
+                    fileInput = new FileInputStream(file);
+                } catch (IOException e) {
+                    throw new ParsingException("Failed to clear file. " + e.getMessage());
+                }
+
+                break;
+            case 'e':
+                if (file == null) {
+                    throw new ParsingException("File must be loaded before clearing.");
+                }
+
+                file = null;
+                try {
+                    fileOutput.close();
+                    fileInput.close();
+                } catch (IOException e) {
+                    throw new ParsingException("Failed to close file. " + e.getMessage());
+                }
+            case ':':
+                System.out.println(Arrays.toString(heap));
                 break;
         }
     }
