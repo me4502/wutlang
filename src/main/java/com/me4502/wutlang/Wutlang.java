@@ -186,15 +186,18 @@ public class Wutlang {
                 }
                 break;
             case '$':
-                String port = "";
+                StringBuilder port = new StringBuilder();
                 char read;
                 while ((read = heap[cursor]) != 0) {
                     cursor ++;
-                    port = port + read;
+                    port.append(read);
                 }
                 cursor ++;
                 try {
-                    server = HttpServer.create(new InetSocketAddress("localhost", Integer.parseInt(port)), 0);
+                    if (server != null) {
+                        throw new ParsingException("Webserver is already running.");
+                    }
+                    server = HttpServer.create(new InetSocketAddress("localhost", Integer.parseInt(port.toString())), 0);
                     System.out.println(server.getAddress().toString());
                     server.createContext("/", httpExchange -> {
                         netInput = new SequenceInputStream(new ByteArrayInputStream(httpExchange.getLocalAddress().getAddress().getAddress()), httpExchange.getRequestBody());
@@ -238,17 +241,21 @@ public class Wutlang {
                 }
                 break;
             case '~':
+                if (server == null) {
+                    throw new ParsingException("Webserver must be created before it can be shutdown.");
+                }
                 server.stop(2);
+                server = null;
                 break;
             case '&':
-                String filename = "";
+                StringBuilder filename = new StringBuilder();
                 while ((read = heap[cursor]) != 0) {
                     cursor ++;
-                    filename = filename + read;
+                    filename.append(read);
                 }
                 cursor ++;
 
-                file = new File(filename);
+                file = new File(filename.toString());
                 try {
                     fileOutput = new FileOutputStream(file, true);
                     fileInput = new FileInputStream(file);
@@ -321,7 +328,7 @@ public class Wutlang {
         int line;
         int column;
 
-        public LinePos(int line, int column) {
+        LinePos(int line, int column) {
             this.line = line;
             this.column = column;
         }
