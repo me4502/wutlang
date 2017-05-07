@@ -68,4 +68,37 @@ public class WutlangSpecTest {
         }
         assertArrayEquals(parser.getHeap(), new char[] {1, (char) -4, 1, (char) -1});
     }
+
+    @Test
+    public void testForLoop() {
+        WutlangParser parser = new WutlangParser("++++++++++[-]");
+        try {
+            parser.parseProgram();
+        } catch (ParsingException e) {
+            fail(e.getMessage());
+        }
+        assertTrue(parser.getHeap()[parser.getCursor()] == 0);
+    }
+
+    @Test
+    public void testNestedForLoop() {
+        WutlangParser parser = new WutlangParser("[[]]");
+        try {
+            parser.parseProgram();
+        } catch (ParsingException e) {
+            fail(e.getMessage());
+        }
+        assertTrue(parser.getHeap()[parser.getCursor()] == 0);
+    }
+
+    @Test
+    public void testNestedForLoop2() {
+        WutlangParser parser = new WutlangParser(">++>++>++[[-]<]");
+        try {
+            parser.parseProgram();
+        } catch (ParsingException e) {
+            fail(e.getMessage());
+        }
+        assertArrayEquals(parser.getHeap(), new char[]{0, 0, 0, 0});
+    }
 }
