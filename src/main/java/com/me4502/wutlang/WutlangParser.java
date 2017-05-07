@@ -67,7 +67,7 @@ public class WutlangParser {
     private InputStream input;
 
     private Stack<LinePos> loopStack = new Stack<>();
-    private boolean loopSkipping;
+    private int loopSkipping;
 
     private HttpServer server;
 
@@ -112,8 +112,10 @@ public class WutlangParser {
                 String line = lines.get(lineNum);
                 char instruction = line.toCharArray()[columnNum];
                 if (instruction == '#') break;
-                if (!loopSkipping || instruction == ']')
+
+                if (loopSkipping == 0 || instruction == ']' || instruction == '[') {
                     parseChar(instruction);
+                }
             }
         }
     }
@@ -165,15 +167,14 @@ public class WutlangParser {
                 heap[cursor] = stack.pop();
             case '[':
                 if ((heap[cursor]) == 0) {
-                    loopSkipping = true;
+                    loopSkipping ++;
                 } else {
                     loopStack.push(new LinePos(lineNum, columnNum));
-                    loopSkipping = false;
                 }
                 break;
             case ']':
-                if (loopSkipping) {
-                    loopSkipping = false;
+                if (loopSkipping > 0) {
+                    loopSkipping --;
                 } else {
                     if (loopStack.size() > 0) {
                         LinePos pos = loopStack.pop();
