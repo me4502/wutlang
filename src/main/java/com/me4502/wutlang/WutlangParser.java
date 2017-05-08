@@ -200,8 +200,16 @@ public class WutlangParser {
                     server = HttpServer.create(new InetSocketAddress("localhost", Integer.parseInt(port.toString())), 0);
                     System.out.println(server.getAddress().toString());
                     server.createContext("/", httpExchange -> {
-                        netInput = new SequenceInputStream(new ByteArrayInputStream(httpExchange.getLocalAddress().getAddress().getAddress()), httpExchange.getRequestBody());
-                        netOutput = httpExchange.getResponseBody();
+                        InputStream newInput = new SequenceInputStream(new ByteArrayInputStream(httpExchange.getLocalAddress().getAddress().getAddress()), httpExchange.getRequestBody());
+                        if (netInput == input) {
+                            input = newInput;
+                        }
+                        netInput = newInput;
+                        OutputStream newOutput = httpExchange.getResponseBody();
+                        if (netOutput == output) {
+                            output = newOutput;
+                        }
+                        netOutput = newOutput;
                         httpExchange.sendResponseHeaders(200, (int)heap[cursor]);
                         networkStreamOpen = true;
                     });
