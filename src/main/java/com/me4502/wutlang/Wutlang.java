@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * **Wutlang version 1.0**
+ * **Wutlang version 1.1**
  *
  *  Wutlang is an esoteric programming language,
  *  with capabilities for netIO and fileIO.
@@ -58,6 +58,7 @@ import java.util.Arrays;
  *          Cursor will be on length afterwards.
  *  '@' - Set network stream as input.
  *  '!' - Set network stream as output
+ *          In format: IP METHOD URL BODY
  *  '%' - Close network stream.
  *  '~' - End server.
  *
