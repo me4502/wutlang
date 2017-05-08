@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
+import java.util.Vector;
 
 public class WutlangParser {
 
@@ -200,7 +201,12 @@ public class WutlangParser {
                     server = HttpServer.create(new InetSocketAddress("localhost", Integer.parseInt(port.toString())), 0);
                     System.out.println(server.getAddress().toString());
                     server.createContext("/", httpExchange -> {
-                        InputStream newInput = new SequenceInputStream(new ByteArrayInputStream(httpExchange.getLocalAddress().getAddress().getAddress()), httpExchange.getRequestBody());
+                        Vector<InputStream> streamEnumeration = new Vector<>();
+                        streamEnumeration.add(new ByteArrayInputStream(httpExchange.getLocalAddress().getAddress().getAddress()));
+                        streamEnumeration.add(new ByteArrayInputStream(httpExchange.getRequestMethod().getBytes()));
+                        streamEnumeration.add(new ByteArrayInputStream(httpExchange.getRequestURI().getPath().substring(1).getBytes()));
+                        streamEnumeration.add(httpExchange.getRequestBody());
+                        InputStream newInput = new SequenceInputStream(streamEnumeration.elements());
                         if (netInput == input) {
                             input = newInput;
                         }
