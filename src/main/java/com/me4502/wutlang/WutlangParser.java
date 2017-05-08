@@ -161,11 +161,13 @@ public class WutlangParser {
                 break;
             case 'r':
                 input = System.in;
+                break;
             case '^':
                 stack.push(heap[cursor]);
                 break;
             case 'V':
                 heap[cursor] = stack.pop();
+                break;
             case '[':
                 if ((heap[cursor]) == 0) {
                     loopSkipping ++;
@@ -307,7 +309,6 @@ public class WutlangParser {
                 } catch (IOException e) {
                     throw new ParsingException("Failed to clear file. " + e.getMessage(), this);
                 }
-
                 break;
             case 'e':
                 if (file == null) {
@@ -321,6 +322,7 @@ public class WutlangParser {
                 } catch (IOException e) {
                     throw new ParsingException("Failed to close file. " + e.getMessage(), this);
                 }
+                break;
             case ':':
                 System.out.println(Arrays.toString(heap));
                 break;
